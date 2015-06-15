@@ -28,6 +28,7 @@ function bnc_add_paypal_fees_to_cart() {
 		$existing_fees += $fee->amount;
 	}
 	$surcharge     = ( ( $woocommerce->cart->cart_contents_total + $woocommerce->cart->shipping_total + $existing_fees ) * $percentage ) + 0.30;
+	$surcharge     = round( $surcharge, 2 );
 
 	$woocommerce->cart->add_fee( 'Service Fees', $surcharge, true, '' );
 
