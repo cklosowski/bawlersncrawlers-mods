@@ -4,7 +4,7 @@
  * Plugin Name: Bawlers N Crawlers Site Mods
  * Plugin URI:  https://bawlersncrawlers.com
  * Description: Custom code for the Bwelers N Crawlers site
- * Version:     0.1
+ * Version:     0.2
  * Author:      Filament Studios
  * Author URI:  https://filament-studios.com
  * License:     GPL-2.0+
@@ -34,4 +34,17 @@ function bnc_add_paypal_fees_to_cart() {
 
 }
 add_action( 'woocommerce_cart_calculate_fees','bnc_add_paypal_fees_to_cart', 999 );
+
+
+function bnc_show_backorders( $is_visible, $id ) {
+	$product = new wC_Product( $id );
+
+	if ( ! $product->is_in_stock() && ! $product->backorders_allowed() ) {
+		$is_visible = false;
+	}
+
+	return $is_visible;
+
+}
+add_filter( 'woocommerce_product_is_visible', 'bnc_show_backorders', 10, 2 );
 
