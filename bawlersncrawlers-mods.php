@@ -87,9 +87,6 @@ class BNC_Mods {
 	 * @return void         Displays HTML
 	 */
 	public function profile_fields( $user ) {
-		if ( $user->ID !== get_current_user_id() || ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
 		?>
 		<h3><?php _e( 'Bawlers N Crawlers Settings', 'bnc-mods' ); ?></h3>
 		<table class="form-table">
