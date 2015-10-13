@@ -279,7 +279,7 @@ class BNC_Mods {
 				$restrict_checkout = get_woocommerce_term_meta( $category->term_id, 'restrict_checkout', true );
 				$restrict_checkout = ! empty( (int) $restrict_checkout ) ? true : false;
 
-				if ( false === $restirct_checkout ) {
+				if ( false === $restrict_checkout ) {
 					continue;
 				}
 
@@ -293,21 +293,44 @@ class BNC_Mods {
 
 			$item_categories = get_the_terms( $cart_item['product_id'], 'product_cat' );
 
-			if ( ! empty( $item_categories ) ) {
+			if ( ! empty( $restrict_to_category ) ) {
 
-				$category_ids = array();
+				if ( ! empty( $item_categories ) ) {
+
+					$category_ids = array();
+
+					foreach ( $item_categories as $category ) {
+
+						$category_ids[] = $category->term_id;
+
+					}
+
+					if ( ! empty( $restrict_to_category ) && ! in_array( $restrict_to_category, $category_ids ) ) {
+						unset( $woocommerce->cart->cart_contents[ $cart_item_key ] );
+					}
+
+				} else if ( ! empty( $restrict_to_category ) ) {
+
+					unset( $woocommerce->cart->cart_contents[ $cart_item_key ] );
+
+				}
+
+			} else {
 
 				foreach ( $item_categories as $category ) {
 
-					$category_ids[] = $category->term_id;
+					$restrict_cart = get_woocommerce_term_meta( $category->term_id, 'restrict_checkout', true );
 
-				}
+					if ( ! empty( $restrict_cart ) ) {
 
-				if ( ! in_array( $restrict_to_category, $category_ids ) ) {
-					unset( $woocommerce->cart->cart_contents[ $cart_item_key ] );
+						unset( $woocommerce->cart->cart_contents[ $cart_item_key ] );
+						continue 2;
+					}
+
 				}
 
 			}
+
 		}
 
 		$woocommerce->cart->calculate_totals();
