@@ -49,6 +49,19 @@ class BNC_Mods {
 
 		// Check if the person is charged co-op fees when fees are being calculated
 		add_filter( 'wc_cat_fees_amount', array( $this, 'maybe_remove_fees' ), 10, 2 );
+
+		// PayPal Fees
+		add_action( 'product_cat_add_form_fields', array( $this, 'add_paypal_fee_new' ) );
+		add_action( 'product_cat_edit_form_fields', array( $this, 'add_paypal_fee_edit' ) );
+
+		add_action( 'product_cat_add_form_fields', array( $this, 'add_checkout_restriction_new' ) );
+		add_action( 'product_cat_edit_form_fields', array( $this, 'add_checkout_restriction_edit' ) );
+
+		add_action( 'created_term', array( $this, 'save_category_fields' ), 10, 3 );
+		add_action( 'edit_term'   , array( $this, 'save_category_fields' ), 10, 3 );
+
+		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'maybe_restrict_cart' ), 10, 3 );
+
 	}
 
 	public function add_paypal_fees_to_cart() {
@@ -59,14 +72,38 @@ class BNC_Mods {
 
 		$percentage    = 0.029;
 		$existing_fees = 0.00;
+
 		foreach ( $woocommerce->cart->fees as $fee ) {
 			$existing_fees += $fee->amount;
 		}
-		$surcharge     = ( ( $woocommerce->cart->cart_contents_total + $woocommerce->cart->shipping_total + $existing_fees ) * $percentage ) + 0.30;
-		$surcharge     = round( $surcharge, 2 );
 
-		$woocommerce->cart->add_fee( 'Service Fees', $surcharge, true, '' );
+		$cart_contents_total = 0.00;
+		foreach ( $woocommerce->cart->cart_contents as $cart_item ) {
+			$item_categories = get_the_terms( $cart_item['product_id'], 'product_cat' );
 
+			if ( ! empty( $item_categories ) ) {
+
+				foreach ( $item_categories as $category ) {
+
+					$exclude_fees = get_woocommerce_term_meta( $category->term_id, 'exclude_paypal_fees', true );
+
+					if ( ! empty( $exclude_fees ) ) {
+						continue 2;
+					}
+
+				}
+
+			}
+
+			$cart_contents_total += $cart_item['line_total'];
+		}
+
+		if ( $cart_contents_total > 0 ) {
+			$surcharge     = ( ( $cart_contents_total + $woocommerce->cart->shipping_total + $existing_fees ) * $percentage ) + 0.30;
+			$surcharge     = round( $surcharge, 2 );
+
+			$woocommerce->cart->add_fee( 'Service Fees', $surcharge, true, '' );
+		}
 	}
 
 
@@ -139,6 +176,143 @@ class BNC_Mods {
 
 		return $fee_amount;
 
+	}
+
+	/**
+	 * Category Exclude from PayPal Fees
+	 *
+	 * @since 1.0
+	 */
+	public function add_paypal_fee_new() {
+		?>
+		<div class="form-field">
+			<label for="exclude-paypal-fees"><?php _e( 'Exclude from PayPal Fees', 'bnc-mods' ); ?></label>
+			<input type="checkbox" id="exclude-paypal-fees" name="exclude_paypal_fees" value="1" />
+		</div>
+		<?php
+	}
+
+	/**
+	 * Edit category PayPal Fields
+	 *
+	 * @since  1.0
+	 * @param mixed $term Term (category) being edited
+	 */
+	public function add_paypal_fee_edit( $term ) {
+
+		$exclude_paypal_fees = get_woocommerce_term_meta( $term->term_id, 'exclude_paypal_fees', true );
+		?>
+		<tr class="form-field">
+			<th scope="row" valign="top"><label><?php _e( 'Exclude from PayPal Fees', 'bnc-mods' ); ?></label></th>
+			<td>
+				<input type="checkbox" id="exclude-paypal-fees" name="exclude_paypal_fees" value="1" <?php checked( '1', $exclude_paypal_fees, true ); ?> />
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Add Category restrict checkout
+	 *
+	 * @since 1.0
+	 */
+	public function add_checkout_restriction_new() {
+		?>
+		<div class="form-field">
+			<label for="restrict-checkout"><?php _e( 'Restrict Checkout to only this Category', 'bnc-mods' ); ?></label>
+			<input type="checkbox" id="restrict-checkout" name="restrict_checkout" value="1" />
+		</div>
+		<?php
+	}
+
+	/**
+	 * Edit category Restrict Checkout
+	 *
+	 * @since  1.0
+	 * @param mixed $term Term (category) being edited
+	 */
+	public function add_checkout_restriction_edit( $term ) {
+
+		$restrict_checkout = get_woocommerce_term_meta( $term->term_id, 'restrict_checkout', true );
+		?>
+		<tr class="form-field">
+			<th scope="row" valign="top"><label><?php _e( 'Restrict Checkout to only this Category', 'bnc-mods' ); ?></label></th>
+			<td>
+				<input type="checkbox" id="restrict-checkout" name="restrict_checkout" value="1" <?php checked( '1', $restrict_checkout, true ); ?> />
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * save_category_fields function.
+	 *
+	 * @since  1.0
+	 * @param mixed $term_id Term ID being saved
+	 */
+	public function save_category_fields( $term_id, $tt_id = '', $taxonomy = '' ) {
+		$exclude_paypal_fees = isset( $_POST['exclude_paypal_fees'] ) ? '1' : '0';
+
+		if ( 'product_cat' === $taxonomy ) {
+			update_woocommerce_term_meta( $term_id, 'exclude_paypal_fees', $exclude_paypal_fees );
+		}
+
+		$restrict_checkout = isset( $_POST['restrict_checkout'] ) ? '1' : '0';
+
+		if ( 'product_cat' === $taxonomy ) {
+			update_woocommerce_term_meta( $term_id, 'restrict_checkout', $restrict_checkout );
+		}
+
+	}
+
+	public function maybe_restrict_cart( $cart_item_data, $product_id, $variation_id ) {
+		global $woocommerce;
+
+		// If the item being added has restrictions, empty the cart of any items not in this category
+		$item_categories      = get_the_terms( $product_id, 'product_cat' );
+		$restrict_to_category = 0;
+
+		if ( ! empty( $item_categories ) ) {
+
+			foreach ( $item_categories as $category ) {
+
+				$restrict_checkout = get_woocommerce_term_meta( $category->term_id, 'restrict_checkout', true );
+				$restrict_checkout = ! empty( (int) $restrict_checkout ) ? true : false;
+
+				if ( false === $restirct_checkout ) {
+					continue;
+				}
+
+				$restrict_to_category = $category->term_id;
+				break;
+			}
+
+		}
+
+		foreach ( $woocommerce->cart->cart_contents as $cart_item_key => $cart_item ) {
+
+			$item_categories = get_the_terms( $cart_item['product_id'], 'product_cat' );
+
+			if ( ! empty( $item_categories ) ) {
+
+				$category_ids = array();
+
+				foreach ( $item_categories as $category ) {
+
+					$category_ids[] = $category->term_id;
+
+				}
+
+				if ( ! in_array( $restrict_to_category, $category_ids ) ) {
+					unset( $woocommerce->cart->cart_contents[ $cart_item_key ] );
+				}
+
+			}
+		}
+
+		$woocommerce->cart->calculate_totals();
+
+		return $cart_item_data;
 	}
 
 
