@@ -4,17 +4,10 @@
  * Plugin Name: Bawlers N Crawlers Site Mods
  * Plugin URI:  https://bawlersncrawlers.com
  * Description: Custom code for the Bwelers N Crawlers site
- * Version:     0.3
+ * Version:     0.4
  * Author:      Filament Studios
  * Author URI:  https://filament-studios.com
  * License:     GPL-2.0+
- */
-
-/**
- * Add a 2.9% + $.30 surcharge to your cart / checkout to cover PayPal Fees
- * change the $percentage to set the surcharge to a value to suit
- * Uses the WooCommerce fees API
- *
  */
 
 class BNC_Mods {
@@ -37,6 +30,7 @@ class BNC_Mods {
 	public function hooks_and_filters() {
 		add_action( 'woocommerce_cart_calculate_fees',array( $this, 'add_paypal_fees_to_cart' ), 999 );
 		add_filter( 'woocommerce_product_is_visible', array( $this, 'show_backorders' ), 10, 2 );
+		add_filter( 'woocommerce_product_categories_widget_args', array( $this, 'exclude_categories_from_widget' ), 10, 1 );
 		remove_action( 'woocommerce_product_on_backorder_notification', array( 'WC_Emails', 'backorder' ) );
 
 		// Show the user profile fields
@@ -64,6 +58,11 @@ class BNC_Mods {
 
 	}
 
+	/**
+	 * Add a 2.9% + $.30 surcharge to your cart / checkout to cover PayPal Fees
+	 * change the $percentage to set the surcharge to a value to suit
+	 * Uses the WooCommerce fees API
+	 */
 	public function add_paypal_fees_to_cart() {
 		global $woocommerce;
 
@@ -107,6 +106,13 @@ class BNC_Mods {
 	}
 
 
+	/**
+	 * Add checks for if a product is not in stock and doesn't have backorders
+	 *
+	 * @param  bool   $is_visible If the product is visible by default
+	 * @param  int    $id         The product ID
+	 * @return bool               If the product should be visible
+	 */
 	public function show_backorders( $is_visible, $id ) {
 		$product = new wC_Product( $id );
 
@@ -119,7 +125,57 @@ class BNC_Mods {
 	}
 
 	/**
+	 * Exclude categories with no visible products from the category list
+	 *
+	 * @since  0.4
+	 * @param  array $category_list_args Array of wp_list_categories parameters
+	 * @return array                     Addition of exclude if items are not visible
+	 */
+	public function exclude_categories_from_widget( $category_list_args ) {
+
+		$args = array(
+			'hide_empty' => false,
+			'hierarchical' => true,
+		);
+
+		$product_categories = get_terms( 'product_cat', $args );
+
+		$exclude = array();
+		foreach ( $product_categories as $category ) {
+
+			$posts         = get_posts( array( 'post_type' => 'product', 'posts_per_page' => -1, 'product_cat' => $category->slug, 'fields' => 'ids' ) );
+			$show_category = false;
+
+			foreach ( $posts as $post ) {
+
+				$product         = new wC_Product( $post );
+				$visible_product = $product->is_visible();
+
+				if ( true === $visible_product ) {
+					$show_category = true;
+					break;
+				}
+
+			}
+
+			if ( false === $show_category ) {
+				$exclude[] = $category->term_id;
+			}
+
+		}
+
+		if ( ! empty( $exclude ) ) {
+			$category_list_args['exclude'] = implode( ',', $exclude );
+			unset( $category_list_args['include'] );
+		}
+
+		return $category_list_args;
+
+	}
+
+	/**
 	 * Adds in the Site Specific feeds notice
+	 *
 	 * @param  object $user The User object being viewed
 	 * @return void         Displays HTML
 	 */
@@ -141,6 +197,7 @@ class BNC_Mods {
 
 	/**
 	 * Saves the User Profile Settings
+	 *
 	 * @param  int $user_id The User ID being saved
 	 * @return void         Saves to Usermeta
 	 */
