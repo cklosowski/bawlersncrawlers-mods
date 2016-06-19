@@ -4,7 +4,7 @@
  * Plugin Name: Bawlers N Crawlers Site Mods
  * Plugin URI:  https://bawlersncrawlers.com
  * Description: Custom code for the Bwelers N Crawlers site
- * Version:     0.4
+ * Version:     0.5
  * Author:      Filament Studios
  * Author URI:  https://filament-studios.com
  * License:     GPL-2.0+
@@ -15,6 +15,8 @@ class BNC_Mods {
 	protected static $_instance = null;
 
 	public function __construct() {
+		$this->constants();
+		$this->includes();
 		$this->hooks_and_filters();
 	}
 
@@ -27,7 +29,35 @@ class BNC_Mods {
 		return self::$_instance;
 	}
 
-	public function hooks_and_filters() {
+	private function constants() {
+		// Plugin version.
+		if ( ! defined( 'BNC_VERSION' ) ) {
+			define( 'BNC_VERSION', '0.5' );
+		}
+
+		// Plugin Folder Path.
+		if ( ! defined( 'BNC_PLUGIN_DIR' ) ) {
+			define( 'BNC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+		}
+
+		// Plugin Folder URL.
+		if ( ! defined( 'BNC_PLUGIN_URL' ) ) {
+			define( 'BNC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+		}
+
+		// Plugin Root File.
+		if ( ! defined( 'BNC_PLUGIN_FILE' ) ) {
+			define( 'BNC_PLUGIN_FILE', __FILE__ );
+		}
+	}
+
+	private function includes() {
+		include BNC_PLUGIN_DIR . '/widgets.php';
+	}
+
+	private function hooks_and_filters() {
+		add_action( 'widgets_init', array( $this, 'widgets' ) );
+
 		add_action( 'woocommerce_cart_calculate_fees',array( $this, 'add_paypal_fees_to_cart' ), 999 );
 		add_filter( 'woocommerce_product_is_visible', array( $this, 'show_backorders' ), 10, 2 );
 		add_filter( 'woocommerce_product_categories_widget_args', array( $this, 'exclude_categories_from_widget' ), 10, 1 );
@@ -56,6 +86,10 @@ class BNC_Mods {
 
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'maybe_restrict_cart' ), 10, 3 );
 
+	}
+
+	public function widgets() {
+		register_widget( 'bnc_woocommerce_full_width_promo_widget' );
 	}
 
 	/**
