@@ -63,16 +63,12 @@ function render_meta_on_cart_and_checkout( $cart_data, $cart_item = null ) {
 }
 add_filter( 'woocommerce_get_item_data', 'render_meta_on_cart_and_checkout', 10, 2 );
 
-function bnc_save_custom_fields( $item_id, $item, $order_id ) {
-	if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
-		return;
-	}
-
-	if( isset( $item->legacy_values[ 'bnc_custom_order_data' ] ) ) {
-		wc_add_order_item_meta( $item_id, 'bnc_custom_order_data', $item->legacy_values[ 'bnc_custom_order_data' ] );
+function bnc_save_custom_fields( $item_id, $values ) {
+	if( isset( $values[ 'bnc_custom_order_data' ] ) ) {
+		wc_add_order_item_meta( $item_id, 'bnc_custom_order_data', $values[ 'bnc_custom_order_data' ] );
 	}
 }
-add_action( 'woocommerce_new_order_item', 'bnc_save_custom_fields', 10, 3 );
+add_action( 'woocommerce_add_order_item_meta', 'bnc_save_custom_fields', 10, 2 );
 
 function bnc_modify_order_meta( $label, $name, $product ) {
 	if ( $label !== 'bnc_custom_order_data' ) {
