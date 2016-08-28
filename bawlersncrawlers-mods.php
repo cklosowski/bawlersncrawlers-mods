@@ -429,10 +429,15 @@ class BNC_Mods {
 		return $cart_item_data;
 	}
 
-
 }
 
 function load_bnc_mods() {
 	return BNC_Mods::instance();
 }
 add_action( 'plugins_loaded', 'load_bnc_mods' );
+
+if ( !function_exists( 'wp_password_change_notification' ) ) {
+    function wp_password_change_notification( $user ) {
+    	return;
+    }
+}
