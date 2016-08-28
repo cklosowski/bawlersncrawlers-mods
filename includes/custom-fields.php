@@ -36,7 +36,7 @@ function bnc_save_custom_entry( $cart_item_data, $product_id ) {
 	$custom_field_name = sanitize_title_with_dashes( $custom_field_name );
 
 	if( isset( $_REQUEST[ $custom_field_name ] ) ) {
-		$cart_item_data['bnc_custom_order_data'] = $_REQUEST[ $custom_field_name ];
+		$cart_item_data['bnc_custom_order_data'] = sanitize_text_field( $_REQUEST[ $custom_field_name ] );
 		/* below statement make sure every add to cart action as unique line item */
 		$cart_item_data['unique_key'] = md5( microtime().rand() );
 	}
