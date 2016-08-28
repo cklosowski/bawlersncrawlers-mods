@@ -62,6 +62,7 @@ class BNC_Mods {
 
 	private function hooks_and_filters() {
 		add_action( 'widgets_init', array( $this, 'widgets' ) );
+		add_action( 'wp', array( $this, 'remove_hooks' ) );
 
 		add_action( 'woocommerce_cart_calculate_fees',array( $this, 'add_paypal_fees_to_cart' ), 999 );
 		add_filter( 'woocommerce_product_is_visible', array( $this, 'show_backorders' ), 10, 2 );
@@ -95,6 +96,14 @@ class BNC_Mods {
 
 	public function widgets() {
 		register_widget( 'bnc_woocommerce_full_width_promo_widget' );
+	}
+
+	public function remove_hooks() {
+		if ( is_page() ) {
+			remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
+			remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_upsell_display', 15 );
+			remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
+		}
 	}
 
 	/**
