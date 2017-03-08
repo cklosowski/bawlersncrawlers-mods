@@ -54,6 +54,7 @@ class BNC_Mods {
 	private function includes() {
 		include BNC_PLUGIN_DIR . '/widgets.php';
 		include BNC_PLUGIN_DIR . '/includes/custom-fields.php';
+		include BNC_PLUGIN_DIR . '/includes/shortcodes.php';
 
 		if ( is_admin() ) {
 			include BNC_PLUGIN_DIR . '/includes/admin/metabox.php';
