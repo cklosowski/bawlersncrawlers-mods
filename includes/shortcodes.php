@@ -21,7 +21,7 @@ function bnc_product_pages( $atts ) {
 	foreach ( $ids as $id ) {
 		$product = new WC_Product( $id );
 
-		if ( ! $product->is_visible() ) {
+		if ( ! $product->is_visible() || ! $product->is_in_stock() || ! $product->is_purchasable() ) {
 			continue;
 		}
 
