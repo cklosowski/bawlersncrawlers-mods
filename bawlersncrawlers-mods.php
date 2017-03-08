@@ -65,7 +65,7 @@ class BNC_Mods {
 		add_action( 'wp', array( $this, 'remove_hooks' ) );
 
 		add_action( 'woocommerce_cart_calculate_fees',array( $this, 'add_paypal_fees_to_cart' ), 999 );
-		add_filter( 'woocommerce_product_is_visible', array( $this, 'show_backorders' ), 10, 2 );
+		//add_filter( 'woocommerce_product_is_visible', array( $this, 'show_backorders' ), 10, 2 );
 		add_filter( 'woocommerce_product_categories_widget_args', array( $this, 'exclude_categories_from_widget' ), 10, 1 );
 		remove_action( 'woocommerce_product_on_backorder_notification', array( 'WC_Emails', 'backorder' ) );
 
