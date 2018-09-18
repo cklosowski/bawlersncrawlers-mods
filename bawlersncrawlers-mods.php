@@ -93,6 +93,12 @@ class BNC_Mods {
 
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'maybe_restrict_cart' ), 10, 3 );
 
+		remove_action( 'wp_footer', 'woocommerce_demo_store' );
+		add_action( 'estore_before_header', 'woocommerce_demo_store' );
+
+		add_action( 'admin_print_styles', array( $this, 'hide_nags' ) );
+
+
 	}
 
 	public function widgets() {
@@ -442,6 +448,16 @@ class BNC_Mods {
 		$woocommerce->cart->calculate_totals();
 
 		return $cart_item_data;
+	}
+
+	// A bunch of styles to hide stupid "Go Pro" notices.
+	public function hide_nags() {
+		?>
+		<style>
+			.thwcfd-notice { display: none; }
+			.frash-notice-rate { display: none !important; }
+		</style>
+		<?php
 	}
 
 }
